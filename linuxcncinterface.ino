@@ -15,14 +15,14 @@
 
 
 #include <stdlib.h>
-#include <gpio.h>
+#include <drive/gpio.h>
 #include <Arduino.h>
 #include <Ethernet.h>
 #include <EthernetUdp.h>
 ///#include <mcpwm.h>
 ///#include <ledc.h>
 #include <esp_timer.h>
-#include <rmt.h>
+#include <drive/rmt.h>
 #include <string.h>
 #include <ESP32Encoder.h>
 
