@@ -1,0 +1,1 @@
+pin+axis.0.motor-pos-cmd pin+axis.0.motor-pos-fb pin+udp.0.in-00 pin+udp.0.in-01 pin+udp.0.in-02 pin+udp.0.in-03 pin+udp.0.in-04 pin+udp.0.enc0
