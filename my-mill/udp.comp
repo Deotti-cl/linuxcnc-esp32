@@ -1,0 +1,238 @@
+
+component udp "Compute the derivative of the input function";
+pin in float posx;
+pin in float posy;
+pin in float posz;
+pin in float posu;
+
+pin out float test;
+
+pin out float fdbx;
+pin out float fdby;
+pin out float fdbz;
+pin out float fdbu;
+pin out float enc0;
+
+///variable double old;
+
+pin out bit in_00;
+pin out bit in_01;
+pin out bit in_02;
+pin out bit in_03;
+pin out bit in_04;
+pin out bit in_05;
+pin out bit in_06;
+pin out bit in_07;
+pin out bit in_08;
+pin out bit in_09;
+pin out bit in_10;
+pin out bit in_11;
+pin out bit in_12;
+pin out bit in_13;
+pin out bit in_14;
+pin out bit in_15;
+pin out bit in_16;
+pin out bit in_17;
+pin out bit in_18;
+pin out bit in_19;
+pin out bit in_20;
+pin out bit in_21;
+pin out bit in_22;
+pin out bit in_23;
+pin out bit in_24;
+pin out bit in_25;
+pin out bit in_26;
+pin out bit in_27;
+pin out bit in_28;
+pin out bit in_29;
+pin out bit in_30;
+pin out bit in_31;
+
+pin in bit out_00;
+pin in bit out_01;
+pin in bit out_02;
+pin in bit out_03;
+pin in bit out_04;
+pin in bit out_05;
+pin in bit out_06;
+pin in bit out_07;
+pin in bit out_08;
+pin in bit out_09;
+pin in bit out_10;
+pin in bit out_11;
+pin in bit out_12;
+pin in bit out_13;
+pin in bit out_14;
+pin in bit out_15;
+pin in bit out_16;
+pin in bit out_17;
+pin in bit out_18;
+pin in bit out_19;
+pin in bit out_20;
+pin in bit out_21;
+pin in bit out_22;
+pin in bit out_23;
+pin in bit out_24;
+pin in bit out_25;
+pin in bit out_26;
+pin in bit out_27;
+pin in bit out_28;
+pin in bit out_29;
+pin in bit out_30;
+pin in bit out_31;
+
+option extra_setup yes;
+function update;
+license "GPL"; // indicates GPL v2 or later
+;;
+
+// Server side implementation of UDP client-server model 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h> 
+#include <linux/kernel.h>
+#include <unistd.h>
+
+struct axes  {
+ hal_s32_t fb0;
+ hal_s32_t fb1;
+ hal_s32_t fb2;
+ hal_s32_t fb3;
+ hal_u32_t  io;
+ int64_t enc0v;
+}fb;       
+
+struct pos  {
+ hal_s32_t pos0;
+ hal_s32_t pos1;
+ hal_s32_t pos2;
+ hal_s32_t pos3;
+ hal_u32_t   io;
+ int64_t   analog;
+}motor_pos;       
+
+
+
+
+
+
+
+#define BUFSIZE 512
+//#define UDP_PORT 27181
+#define SEND_TIMEOUT_US 100
+#define RECV_TIMEOUT_US 100
+#define READ_PCK_DELAY_NS 1000
+
+
+int sockfd, portno, n;
+int serverlen;
+struct sockaddr_in serveraddr;
+struct hostent *server;
+char *hostname;
+char buf[BUFSIZE];
+char buf1[512];
+float axes[9];
+char buffer[512] ;
+float scale=100.0;
+
+EXTRA_SETUP() 
+{
+;
+}
+
+// Driver code 
+FUNCTION(update)
+{
+    
+    
+    
+
+    motor_pos.pos0=posx*scale;
+    motor_pos.pos1=posy*scale;
+    motor_pos.pos2=posz*scale;
+    motor_pos.pos3=posu*scale;
+   
+
+
+// hostname = "192.168.1.177";
+   // portno = 5000;
+
+    /* socket: create the socket */
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    
+
+    /* gethostbyname: get the server's DNS entry */
+    server = gethostbyname("192.168.1.177");
+    /* build the server's Internet address */
+    bzero((char *) &serveraddr, sizeof(serveraddr));
+    serveraddr.sin_family = AF_INET;
+    bcopy((char *)server->h_addr, 
+	  (char *)&serveraddr.sin_addr.s_addr, server->h_length);
+    serveraddr.sin_port = htons(5000);
+    
+
+
+
+
+
+    /* send the message to the server */
+    serverlen = sizeof(serveraddr);
+    int ret;
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = RECV_TIMEOUT_US;
+
+    ret = setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
+    timeout.tv_usec = SEND_TIMEOUT_US;
+    setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
+    sendto(sockfd, buf,sizeof(motor_pos), 0, &serveraddr, serverlen);
+    //if (n < 0) {writes=writes+1;}
+    recv(sockfd, buf1 ,sizeof(motor_pos), 0);
+    //if(n < 0) {
+    //reads=reads+1;
+    //rtapi_delay(READ_PCK_DELAY_NS);
+    //}
+    close(sockfd);
+    //*****************************************************************//
+  
+ memcpy(&buf,&motor_pos,sizeof(motor_pos));   
+
+//memcpy(buffer, buf, 1024);
+memcpy(&fb, buf1, sizeof(fb));    
+fdbx=(float)fb.fb0/scale;
+fdby=(float)fb.fb1/scale;
+fdbz=(float)fb.fb2/scale;
+fdbu=(float)fb.fb3/scale;
+enc0=(float)fb.enc0v;
+in_00=(fb.io >> 0) & 1;
+in_01=(fb.io >> 1) & 1;
+in_02=(fb.io >> 2) & 1;
+in_03=(fb.io >> 3) & 1;
+in_04=(fb.io >> 4) & 1;
+in_05=(fb.io >> 5) & 1;
+in_06=(fb.io >> 6) & 1;
+in_07=(fb.io >> 7) & 1;
+in_08=(fb.io >> 8) & 1;
+in_09=(fb.io >> 9) & 1;
+in_10=(fb.io >> 10) & 1;
+in_11=(fb.io >> 11) & 1;
+in_12=(fb.io >> 12) & 1;
+in_13=(fb.io >> 13) & 1;
+in_14=(fb.io >> 14) & 1;
+in_15=(fb.io >> 15) & 1;
+in_16=(fb.io >> 16) & 1;
+in_17=(fb.io >> 17) & 1;
+in_18=(fb.io >> 18) & 1;
+in_19=(fb.io >> 19) & 1;
+
+
+
+}
+
+
+ 
