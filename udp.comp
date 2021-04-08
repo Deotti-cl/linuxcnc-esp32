@@ -3,14 +3,19 @@ component udp "Compute the derivative of the input function";
 pin in float posx;
 pin in float posy;
 pin in float posz;
-pin in float posu;
+pin in float posa;
 
 pin out float test;
 
 pin out float fdbx;
 pin out float fdby;
 pin out float fdbz;
+pin out float fdba;
+pin out float fdbb;
+pin out float fdbc;
 pin out float fdbu;
+pin out float fdbv;
+pin out float fdbw;
 pin out float enc0;
 
 ///variable double old;
@@ -81,7 +86,7 @@ pin in bit out_29;
 pin in bit out_30;
 pin in bit out_31;
 
-
+option extra_setup yes;
 function update;
 license "GPL"; // indicates GPL v2 or later
 ;;
@@ -97,21 +102,31 @@ license "GPL"; // indicates GPL v2 or later
 #include <netdb.h> 
 #include <linux/kernel.h>
 #include <unistd.h>
-
+#include <rtapi_math.h>
 struct axes  {
- hal_s32_t fb0;
- hal_s32_t fb1;
- hal_s32_t fb2;
- hal_s32_t fb3;
+ int32_t fb0;
+ int32_t fb1;
+ int32_t fb2;
+ int32_t fb3;
+ int32_t fb4;
+ int32_t fb5;
+ int32_t fb6;
+ int32_t fb7;
+ int32_t fb8;
  hal_u32_t  io;
  int64_t enc0v;
 }fb;       
 
 struct pos  {
- hal_s32_t pos0;
- hal_s32_t pos1;
- hal_s32_t pos2;
- hal_s32_t pos3;
+ int32_t pos0;
+ int32_t pos1;
+ int32_t pos2;
+ int32_t pos3;
+ int32_t pos4;
+ int32_t pos5;
+ int32_t pos6;
+ int32_t pos7;
+ int32_t pos8;
  hal_u32_t   io;
  int64_t   analog;
 }motor_pos;       
@@ -126,7 +141,7 @@ struct pos  {
 //#define UDP_PORT 27181
 #define SEND_TIMEOUT_US 100
 #define RECV_TIMEOUT_US 100
-#define READ_PCK_DELAY_NS 1000
+#define READ_PCK_DELAY_NS 10000
 
 
 int sockfd, portno, n;
@@ -135,13 +150,15 @@ struct sockaddr_in serveraddr;
 struct hostent *server;
 char *hostname;
 char buf[BUFSIZE];
-char buf1[512];
+char buf1[BUFSIZE];
 float axes[9];
 char buffer[512] ;
-float scale=100.0;
+int32_t scale=100;
 
-
-
+EXTRA_SETUP() 
+{
+;
+}
 
 // Driver code 
 FUNCTION(update)
@@ -153,28 +170,30 @@ FUNCTION(update)
     motor_pos.pos0=posx*scale;
     motor_pos.pos1=posy*scale;
     motor_pos.pos2=posz*scale;
-    motor_pos.pos3=posu*scale;
+    motor_pos.pos3=posa*scale;
    
-    hostname = "192.168.1.177";
-    portno = 5000;
+
+
+// hostname = "192.168.1.177";
+   // portno = 5000;
 
     /* socket: create the socket */
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     
 
     /* gethostbyname: get the server's DNS entry */
-    server = gethostbyname(hostname);
+    server = gethostbyname("192.168.1.177");
     /* build the server's Internet address */
     bzero((char *) &serveraddr, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;
     bcopy((char *)server->h_addr, 
 	  (char *)&serveraddr.sin_addr.s_addr, server->h_length);
-    serveraddr.sin_port = htons(portno);
+    serveraddr.sin_port = htons(27181);
     
 
 
 
-memcpy(&buf,&motor_pos,sizeof(motor_pos));
+     memcpy(&buf,&motor_pos,sizeof(motor_pos));   
 
     /* send the message to the server */
     serverlen = sizeof(serveraddr);
@@ -188,22 +207,35 @@ memcpy(&buf,&motor_pos,sizeof(motor_pos));
     setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
     sendto(sockfd, buf,sizeof(motor_pos), 0, &serveraddr, serverlen);
     //if (n < 0) {writes=writes+1;}
-    recv(sockfd, buf1 ,sizeof(motor_pos), 0);
+    //recv(sockfd, buf1 ,sizeof(motor_pos), 0);
+    ;
     //if(n < 0) {
     //reads=reads+1;
-    //rtapi_delay(READ_PCK_DELAY_NS);
+    if (recvfrom(sockfd,buf,sizeof(motor_pos),0,NULL,NULL)){
+
+//rtapi_delay(READ_PCK_DELAY_NS);
     //}
-    close(sockfd);
+  
     //*****************************************************************//
   
-    
+ 
 
 //memcpy(buffer, buf, 1024);
-memcpy(&fb, buf1, sizeof(fb));    
+memcpy(&fb, buf, sizeof(fb));    
+if(fb.fb0 <= -10000 |  fb.fb1 <= -10000){
+;
+}
+else{
 fdbx=(float)fb.fb0/scale;
 fdby=(float)fb.fb1/scale;
 fdbz=(float)fb.fb2/scale;
-fdbu=(float)fb.fb3/scale;
+fdba=(float)fb.fb3/scale;
+fdbb=(float)fb.fb4/scale;
+fdbc=(float)fb.fb5/scale;
+fdbu=(float)fb.fb6/scale;
+fdbv=(float)fb.fb7/scale;
+fdbw=(float)fb.fb8/scale;
+
 enc0=(float)fb.enc0v;
 in_00=(fb.io >> 0) & 1;
 in_01=(fb.io >> 1) & 1;
@@ -225,8 +257,10 @@ in_16=(fb.io >> 16) & 1;
 in_17=(fb.io >> 17) & 1;
 in_18=(fb.io >> 18) & 1;
 in_19=(fb.io >> 19) & 1;
-
-
-
+}
+}
+  close(sockfd);
 }
 
+
+ 
