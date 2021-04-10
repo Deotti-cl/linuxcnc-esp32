@@ -52,6 +52,14 @@ pin out bit in_28;
 pin out bit in_29;
 pin out bit in_30;
 pin out bit in_31;
+pin out bit in_32;
+pin out bit in_33;
+pin out bit in_34;
+pin out bit in_35;
+pin out bit in_36;
+pin out bit in_37;
+pin out bit in_38;
+pin out bit in_39;
 
 pin in bit out_00;
 pin in bit out_01;
@@ -85,6 +93,15 @@ pin in bit out_28;
 pin in bit out_29;
 pin in bit out_30;
 pin in bit out_31;
+pin in bit out_32;
+pin in bit out_33;
+pin in bit out_34;
+pin in bit out_35;
+pin in bit out_36;
+pin in bit out_37;
+pin in bit out_38;
+pin in bit out_39;
+
 
 option extra_setup yes;
 function update;
@@ -109,11 +126,8 @@ struct axes  {
  int32_t fb2;
  int32_t fb3;
  int32_t fb4;
- int32_t fb5;
- int32_t fb6;
- int32_t fb7;
- int32_t fb8;
- hal_u32_t  io;
+ uint32_t  io;
+ uint32_t  io2;
  int64_t enc0v;
 }fb;       
 
@@ -123,11 +137,8 @@ struct pos  {
  int32_t pos2;
  int32_t pos3;
  int32_t pos4;
- int32_t pos5;
- int32_t pos6;
- int32_t pos7;
- int32_t pos8;
- hal_u32_t   io;
+ uint32_t   io;
+ uint32_t   io2;
  int64_t   analog;
 }motor_pos;       
 
@@ -171,7 +182,7 @@ FUNCTION(update)
     motor_pos.pos1=posy*scale;
     motor_pos.pos2=posz*scale;
     motor_pos.pos3=posa*scale;
-   
+    motor_pos.pos4=posa*scale;
 
 
 // hostname = "192.168.1.177";
@@ -212,7 +223,7 @@ FUNCTION(update)
     //if(n < 0) {
     //reads=reads+1;
     if (recvfrom(sockfd,buf,sizeof(motor_pos),0,NULL,NULL)){
-
+    close(sockfd);
 //rtapi_delay(READ_PCK_DELAY_NS);
     //}
   
@@ -231,10 +242,6 @@ fdby=(float)fb.fb1/scale;
 fdbz=(float)fb.fb2/scale;
 fdba=(float)fb.fb3/scale;
 fdbb=(float)fb.fb4/scale;
-fdbc=(float)fb.fb5/scale;
-fdbu=(float)fb.fb6/scale;
-fdbv=(float)fb.fb7/scale;
-fdbw=(float)fb.fb8/scale;
 
 enc0=(float)fb.enc0v;
 in_00=(fb.io >> 0) & 1;
@@ -257,9 +264,33 @@ in_16=(fb.io >> 16) & 1;
 in_17=(fb.io >> 17) & 1;
 in_18=(fb.io >> 18) & 1;
 in_19=(fb.io >> 19) & 1;
+in_20=(fb.io >> 20) & 1;
+in_21=(fb.io >> 21) & 1;
+in_22=(fb.io >> 22) & 1;
+in_23=(fb.io >> 23) & 1;
+in_24=(fb.io >> 24) & 1;
+in_25=(fb.io >> 25) & 1;
+in_26=(fb.io >> 26) & 1;
+in_27=(fb.io >> 27) & 1;
+in_28=(fb.io >> 28) & 1;
+in_29=(fb.io >> 29) & 1;
+in_30=(fb.io >> 30) & 1;
+in_31=(fb.io >> 31) & 1;
+in_32=(fb.io2 >> 0) & 1;
+in_33=(fb.io2 >> 1) & 1;
+in_34=(fb.io2 >> 2) & 1;
+in_35=(fb.io2 >> 3) & 1;
+in_36=(fb.io2 >> 4) & 1;
+in_37=(fb.io2 >> 5) & 1;
+in_38=(fb.io2 >> 6) & 1;
+in_39=(fb.io2 >> 7) & 1;
+
+
+
+
 }
 }
-  close(sockfd);
+  
 }
 
 

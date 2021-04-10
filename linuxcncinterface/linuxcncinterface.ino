@@ -42,16 +42,16 @@ IPAddress ip(192, 168, 1, 177);
 IPAddress sub(255, 255, 255, 0); 
 unsigned int localPort = 27181;      // local port to listen on
 // buffers for receiving and sending data
-char packetBuffer[1024];  // buffer to hold incoming packet,
+char packetBuffer[512];  // buffer to hold incoming packet,
 EthernetUDP Udp;
 //WiFiUDP Udp;
 
-char bufferin[1024] ;
-char bufferout[1024] ;
+
+
 /*##################################i nterupt function ################################*/
 unsigned long timeus;
 volatile int interrupts;
-int totalInterrupts;//char packetBuffer[UDP_TX_PACKET_MAX_SIZE]; 
+int totalInterrupts;
 hw_timer_t * timer = NULL;
 
 portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
@@ -75,7 +75,7 @@ int16_t steps_1_executed;
 int16_t steps_2_executed;
 int16_t steps_3_executed;
 int16_t steps_4_executed;
-int16_t steps_5_executed;
+
 
 
 
@@ -87,7 +87,7 @@ int32_t old_pos_1;
 int32_t old_pos_2;
 int32_t old_pos_3;
 int32_t old_pos_4;
-int32_t old_pos_5;
+
 }olds;
 
 
@@ -100,7 +100,7 @@ int8_t dir1=1;
 int8_t dir2=1;
 int8_t dir3=1;
 int8_t dir4=1;
-int8_t dir5=1;
+
 
 
 struct axes  {
@@ -109,16 +109,13 @@ struct axes  {
  int32_t fb2;
  int32_t fb3;
  int32_t fb4;
- int32_t fb5;
- int32_t fb6;
- int32_t fb7;
- int32_t fb8;
- unsigned int io;
+ uint32_t io; 
+ uint32_t io2;
 int64_t enc0;
 
 };       
 
-axes fdbrt;
+//axes fdbrt;
 //struct axes mayaxes ;
 
 struct pos  {
@@ -127,39 +124,39 @@ struct pos  {
  int32_t pos2;
  int32_t pos3;
  int32_t pos4;
- int32_t pos5;
- int32_t pos6;
- int32_t pos7;
- int32_t pos8;
  uint32_t io;
+ uint32_t io2;
  int64_t analog;
 
 }cmd;       
 
-axes fdb={0, 0, 0, 0, 0, 0};
+axes fdb={0, 0, 0, 0, 0, 0, 0, 0};
 
 int packetSize;
 long enc0;
 long enc1;
 long enc2;
 long enc3;
-int count=0;
-int sema=0;
+char bufferin[sizeof(fdb)] ;
+
 //////////////////////////////////task nucleo 2 ////////////////////////
 
 void LoopOnProCpu(void *arg) {
     (void)arg;
 int    packetSize = Udp.parsePacket();
 if (packetSize) {
+  
+    //portENTER_CRITICAL_ISR(&timerMux); 
+   
     Udp.write(bufferin,sizeof(fdb)); 
     Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
     Udp.endPacket();
-  
-   
+    memcpy(&bufferin, &fdb, sizeof(fdb)); 
     Udp.read(packetBuffer,sizeof(cmd));
     memcpy(&cmd,packetBuffer,sizeof(cmd));
     
-    memcpy(&bufferin, &fdb, sizeof(fdb)); 
+   fdb.io = (REG_READ(GPIO_IN_REG)) ;
+   fdb.io2 = (REG_READ(GPIO_IN1_REG)) ;
     
    // if (fdb.enc0 < 0){
    //  Serial.println (fdb.fb0); 
@@ -168,7 +165,7 @@ if (packetSize) {
    // if there's data available, read a packet
   
 //Serial.println (cmd.pos5);
-fdb={fdbrt.fb0,fdbrt.fb1,fdbrt.fb2,fdbrt.fb3,100,enc0};
+//fdb={fdbrt.fb0,fdbrt.fb1,fdbrt.fb2,fdbrt.fb3,fdbrt.fb4,fdbrt.io,fdbrt.io2,enc0};
 //fdb={cmd.pos0,cmd.pos1,cmd.pos2,cmd.pos3,3};
 
 
@@ -178,7 +175,7 @@ fdb={fdbrt.fb0,fdbrt.fb1,fdbrt.fb2,fdbrt.fb3,100,enc0};
 
 ////////////////////////////////////////////////////////
 steps_0_executed=0;
-steps_0_dir=cmd.pos0 - fdbrt.fb0;
+steps_0_dir=cmd.pos0 - fdb.fb0;
 if(steps_0_dir > 0 && dir0 == -1 ){
    REG_WRITE(GPIO_OUT_W1TC_REG, BIT12);//GPIO4 LOW (clear);
    dir0=1;
@@ -195,7 +192,7 @@ if(steps_0_dir > 0 && dir0 == -1 ){
 steps_0=abs(steps_0_dir);
 /////////////////////////////////////////////////////
 steps_1_executed=0;
-steps_1_dir=cmd.pos1 - fdbrt.fb1;
+steps_1_dir=cmd.pos1 - fdb.fb1;
 if(steps_1_dir > 0 && dir1 != 1 ){
    REG_WRITE(GPIO_OUT_W1TC_REG, BIT13);//GPIO4 LOW (clear);
     steps_1_dir=0;
@@ -210,7 +207,7 @@ if(steps_1_dir > 0 && dir1 != 1 ){
 steps_1=abs(steps_1_dir);
 /////////////////////////////////////////////////////
 steps_2_executed=0;
-steps_2_dir=cmd.pos2 - fdbrt.fb2;
+steps_2_dir=cmd.pos2 - fdb.fb2;
 if(steps_2_dir > 0 && dir2 != 1 ){
     steps_2_dir=0;
    REG_WRITE(GPIO_OUT_W1TC_REG, BIT14);//GPIO2 LOW (clear);
@@ -224,7 +221,7 @@ if(steps_2_dir > 0 && dir2 != 1 ){
 steps_2=abs(steps_2_dir);
 ////////////////////////////////////////////////////
 steps_3_executed=0;
-steps_3_dir=cmd.pos3 - fdbrt.fb3;
+steps_3_dir=cmd.pos3 - fdb.fb3;
 if(steps_3_dir > 0 && dir3 != 1 ){
    REG_WRITE(GPIO_OUT_W1TC_REG, BIT14);//GPIO4 LOW (clear);
     steps_3_dir=0;
@@ -238,18 +235,7 @@ if(steps_3_dir > 0 && dir3 != 1 ){
  }
 steps_3=abs(steps_3_dir); 
     
-    //Udp.read(packetBuffer,50);
-    
-count=count+1;
-if (count>= 1000){
-
-//Serial.println ("RECIVED");
-//Serial.println (cmd.pos0);
-//Serial.println (fdbrt.fb0);
-//Serial.println (steps_0_dir);
-
-count=0;
-}
+//portEXIT_CRITICAL_ISR(&timerMux);  
 }
 }
 
@@ -361,12 +347,12 @@ void initRMT() {
 static void IRAM_ATTR onTime() {
 
  
- portENTER_CRITICAL_ISR(&timerMux);
+ //portENTER_CRITICAL_ISR(&timerMux);
 if (steps_0_executed < steps_0) {
  RMT.conf_ch[RMT_CHANNEL_0].conf1.mem_rd_rst = 1;
  RMT.conf_ch[RMT_CHANNEL_0].conf1.tx_start = 1;
 steps_0_executed++;
-fdbrt.fb0=fdbrt.fb0+dir0;
+fdb.fb0=fdb.fb0+dir0;
 }
 
 
@@ -374,14 +360,14 @@ if (steps_1_executed < steps_1) {
  RMT.conf_ch[RMT_CHANNEL_1].conf1.mem_rd_rst = 1;
  RMT.conf_ch[RMT_CHANNEL_1].conf1.tx_start = 1;
 steps_1_executed++;
-fdbrt.fb1=fdbrt.fb1+dir1;
+fdb.fb1=fdb.fb1+dir1;
 
 }
 if (steps_2_executed < steps_2) {
  RMT.conf_ch[RMT_CHANNEL_2].conf1.mem_rd_rst = 1;
  RMT.conf_ch[RMT_CHANNEL_2].conf1.tx_start = 1;
 steps_2_executed++;
-fdbrt.fb2=fdbrt.fb2+dir2;
+fdb.fb2=fdb.fb2+dir2;
 
 }
 /*
@@ -405,7 +391,7 @@ if (steps_0_executed==steps_0 && steps_1_executed==steps_1
     //timer = NULL;
     }
 //*/
-portEXIT_CRITICAL_ISR(&timerMux);
+//portEXIT_CRITICAL_ISR(&timerMux);
 }
 
 
@@ -423,6 +409,14 @@ void setup() {
  //pinMode(4,OUTPUT);
  pinMode(12,OUTPUT);
  pinMode(13,OUTPUT);
+ pinMode(26,INPUT);
+ pinMode(25,INPUT);
+ pinMode(33,INPUT);
+ pinMode(32,INPUT);
+ pinMode(35,INPUT);
+ pinMode(34,INPUT);
+ pinMode(39,INPUT);
+ pinMode(36,INPUT);
  //REG_WRITE(GPIO_ENABLE_REG, BIT4);//Define o GPIO2 como saída
  //REG_WRITE(GPIO_ENABLE_REG, BIT15);//Define o GPIO2 como saída
  //REG_WRITE(GPIO_ENABLE_REG, BIT17);//Define o GPIO2 como saída
@@ -450,10 +444,10 @@ portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 
   // Configure Prescaler to 80, as our timer runs @ 80Mhz
   // Giving an output of 80,000,000 / 80 = 1,000,000 ticks / second
-  timer = timerBegin(0, 80, true);                
+  timer = timerBegin(0, 8, true);                
   timerAttachInterrupt(timer, &onTime, true);    
   // Fire Interrupt every 1m ticks, so 1s
-  timerAlarmWrite(timer,4, true);      
+  timerAlarmWrite(timer,35, true);      
   timerAlarmEnable(timer);
 
 
@@ -512,18 +506,16 @@ void loop() {
 //
  
 
-memcpy(&olds,&cmd, sizeof(cmd));
-//fdb={888.8,444.4,111.1,0.555,3};
+
 //delayMicroseconds(20);
 enc0=encoder.getCount();
 enc1=encoder.getCount();
 enc2=encoder.getCount();
 enc3=encoder.getCount();
 
+//fdb.io =  
 
 
-
-
-
+ 
  esp_ipc_call(PRO_CPU_NUM, LoopOnProCpu, NULL);    
 }
